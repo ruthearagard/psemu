@@ -26,8 +26,6 @@
 #
 # Source (heh): https://cmake.org/cmake/help/v3.13/command/file.html#filesystem
 
-find_package(fmt CONFIG REQUIRED)
-
 set(SRCS bus.cpp cpu.cpp ps.cpp)
 set(HDRS include/bus.h include/cpu.h include/ps.h include/types.h)
 
@@ -37,8 +35,6 @@ set_target_properties(psemu PROPERTIES
                       CXX_STANDARD 17
                       CXX_STANDARD_REQUIRED YES
                       CXX_EXTENSIONS ON)
-
-target_link_libraries(psemu fmt::fmt fmt::fmt-header-only)
 
 target_include_directories(psemu PRIVATE include)
 target_compile_options(psemu PRIVATE -Wno-c++98-compat
