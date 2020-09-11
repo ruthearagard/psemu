@@ -41,6 +41,26 @@ auto Emulator::run() -> void
             break;
         }
 
+        if (cpu.pc == 0x000000A0)
+        {
+            switch (cpu.gpr[9])
+            {
+                case 0x3C:
+                    QTextStream(stdout) << static_cast<char>(cpu.gpr[4]);
+                    break;
+            }
+        }
+
+        if (cpu.pc == 0x000000B0)
+        {
+            switch (cpu.gpr[9])
+            {
+                case 0x3D:
+                    QTextStream(stdout) << static_cast<char>(cpu.gpr[4]);
+                    break;
+            }
+        }
+
         if (tracing)
         {
             disasm.before();
