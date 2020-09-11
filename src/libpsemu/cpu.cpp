@@ -32,7 +32,7 @@ auto CPU::reset() noexcept -> void
     pc      = RESET_VECTOR;
     next_pc = RESET_VECTOR;
 
-    instruction.word = bus.memory_read<Word>(pc);
+    instruction.word = bus.memory_access<Word>(pc);
 }
 
 /// @brief Returns the 26-bit target address.
@@ -42,14 +42,14 @@ auto CPU::target() const noexcept -> unsigned int
 }
 
 /// @brief Returns the lower 16-bits of the instruction.
-auto CPU::immediate() const noexcept -> unsigned int
+auto CPU::immediate() const noexcept -> Halfword
 {
     return instruction.word & 0x0000FFFF;
 }
 
 /// @brief Same as the `immediate()` method, merely an alias as defined by MIPS
 /// conventions.
-auto CPU::offset() const noexcept -> unsigned int
+auto CPU::offset() const noexcept -> Halfword
 {
     return immediate();
 }
@@ -62,7 +62,7 @@ auto CPU::base() const noexcept -> unsigned int
 }
 
 /// @brief Returns the current virtual address.
-auto CPU::vaddr() const noexcept -> unsigned int
+auto CPU::vaddr() const noexcept -> Word
 {
     return static_cast<SignedHalfword>(offset()) + gpr[base()];
 }
@@ -117,6 +117,10 @@ auto CPU::step() noexcept -> void
 
                     break;
 
+                case SPECIALInstruction::MFHI:
+                    gpr[instruction.rd] = hi;
+                    break;
+
                 case SPECIALInstruction::MFLO:
                     gpr[instruction.rd] = lo;
                     break;
@@ -127,6 +131,12 @@ auto CPU::step() noexcept -> void
 
                     hi = static_cast<SignedWord>(gpr[instruction.rs]) %
                          static_cast<SignedWord>(gpr[instruction.rt]);
+
+                    break;
+
+                case SPECIALInstruction::DIVU:
+                    lo = gpr[instruction.rs] / gpr[instruction.rt];
+                    hi = gpr[instruction.rs] % gpr[instruction.rt];
 
                     break;
 
@@ -149,6 +159,13 @@ auto CPU::step() noexcept -> void
                 case SPECIALInstruction::OR:
                     gpr[instruction.rd] = gpr[instruction.rs] |
                                           gpr[instruction.rt];
+                    break;
+
+                case SPECIALInstruction::SLT:
+                    gpr[instruction.rd] =
+                    static_cast<SignedWord>(gpr[instruction.rs]) <
+                    static_cast<SignedWord>(gpr[instruction.rt]);
+
                     break;
 
                 case SPECIALInstruction::SLTU:
@@ -182,17 +199,18 @@ auto CPU::step() noexcept -> void
             {
                 gpr[31] = pc + 8;
             }
-            branch_if(((gpr[instruction.rs]) ^ (instruction.rt << 31)) < 0);
+            branch_if(static_cast<int32_t>((gpr[instruction.rs]) ^
+                                           (instruction.rt << 31)) < 0);
             break;
         }
 
         case Instruction::J:
-            next_pc = ((pc & 0xF0000000) + (target() << 2)) - 4;
+            next_pc = ((target() << 2) + (pc & 0xF0000000)) - 4;
             break;
 
         case Instruction::JAL:
             gpr[31] = pc + 8;
-            next_pc = ((pc & 0xF0000000) + (target() << 2)) - 4;
+            next_pc = ((target() << 2) + (pc & 0xF0000000)) - 4;
 
             break;
 
@@ -209,7 +227,7 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::BGTZ:
-            branch_if(gpr[instruction.rs] > 0);
+            branch_if(static_cast<int32_t>(gpr[instruction.rs]) > 0);
             break;
 
         case Instruction::ADDI: // overflow
@@ -228,7 +246,7 @@ auto CPU::step() noexcept -> void
         case Instruction::SLTIU:
             gpr[instruction.rt] =
             gpr[instruction.rs] <
-            static_cast<Halfword>(static_cast<SignedHalfword>(immediate()));
+            static_cast<Word>(static_cast<SignedHalfword>(immediate()));
 
             break;
 
@@ -238,6 +256,10 @@ auto CPU::step() noexcept -> void
 
         case Instruction::ORI:
             gpr[instruction.rt] = gpr[instruction.rs] | immediate();
+            break;
+
+        case Instruction::XORI:
+            gpr[instruction.rt] = gpr[instruction.rs] ^ immediate();
             break;
 
         case Instruction::LUI:
@@ -261,35 +283,35 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::LB:
-            gpr[instruction.rt] = bus.memory_read<SignedByte>(vaddr());
+            gpr[instruction.rt] = bus.memory_access<SignedByte>(vaddr());
             break;
 
         case Instruction::LW:
-            gpr[instruction.rt] = bus.memory_read<Word>(vaddr());
+            gpr[instruction.rt] = bus.memory_access<Word>(vaddr());
             break;
 
         case Instruction::LBU:
-            gpr[instruction.rt] = bus.memory_read<Byte>(vaddr());
+            gpr[instruction.rt] = bus.memory_access<Byte>(vaddr());
             break;
 
         case Instruction::SB:
-            bus.memory_write<Byte>(vaddr(), gpr[instruction.rt] & 0x000000FF);
+            bus.memory_access<Byte>(vaddr(), gpr[instruction.rt] & 0x000000FF);
             break;
 
         case Instruction::SH:
-            bus.memory_write<Halfword>(vaddr(),
-                                       gpr[instruction.rt] & 0x0000FFFF);
+            bus.memory_access<Halfword>(vaddr(),
+                                        gpr[instruction.rt] & 0x0000FFFF);
             break;
 
         case Instruction::SW:
             if (!(cop0[COP0Register::SR] & SRBits::IsC))
             {
-                bus.memory_write<Word>(vaddr(), gpr[instruction.rt]);
+                bus.memory_access<Word>(vaddr(), gpr[instruction.rt]);
             }
             break;
 
         default:
             return;
     }
-    instruction.word = bus.memory_read<Word>(pc += 4);
+    instruction.word = bus.memory_access<Word>(pc += 4);
 }

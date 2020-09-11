@@ -38,7 +38,7 @@ namespace PlayStation
         /// converted to a physical address.
         /// @return The data from memory.
         template<typename T>
-        auto memory_read(const Word vaddr) noexcept -> T
+        auto memory_access(const Word vaddr) noexcept -> T
         {
             // XXX: This technically isn't accurate as it clobbers the Cache
             // Control register (0xFFFE0130), but for now it works.
@@ -50,7 +50,7 @@ namespace PlayStation
             {
                 // [0x00000000 - 0x001FFFFF]: Main RAM
                 case 0x0000 ... 0x001F:
-                    std::memcpy(&result, ram.data() + paddr, sizeof(T));
+                    std::memcpy(&result, &ram.data()[paddr], sizeof(T));
                     return result;
 
                 // [0x1FC00000 - 0x1FC7FFFF]: BIOS ROM (512 KB)
@@ -73,7 +73,7 @@ namespace PlayStation
         /// converted to a physical address.
         /// @param data The data to store.
         template<typename T>
-        auto memory_write(const Word vaddr, const T data) noexcept -> void
+        auto memory_access(const Word vaddr, const T data) noexcept -> void
         {
             // XXX: This technically isn't accurate as it clobbers the Cache
             // Control register (0xFFFE0130), but for now it works.

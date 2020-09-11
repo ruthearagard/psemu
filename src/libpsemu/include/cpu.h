@@ -87,18 +87,18 @@ namespace PlayStation
         auto target() const noexcept -> unsigned int;
 
         /// @brief Returns the lower 16-bits of the instruction.
-        auto immediate() const noexcept -> unsigned int;
+        auto immediate() const noexcept -> Halfword;
 
         /// @brief Same as the `immediate()` method, merely an alias as defined
         /// by MIPS conventions.
-        auto offset() const noexcept -> unsigned int;
+        auto offset() const noexcept -> Halfword;
 
         /// @brief Same as referencing the `rs` field of the current
         /// instruction, merely an alias as defined by MIPS conventions.
         auto base() const noexcept -> unsigned int;
 
         /// @brief Returns the current virtual address.
-        auto vaddr() const noexcept -> unsigned int;
+        auto vaddr() const noexcept -> Word;
 
         /// @brief Instruction
         enum COP0Register
@@ -143,6 +143,7 @@ namespace PlayStation
             SLTIU = 0x0B,
             ANDI  = 0x0C,
             ORI   = 0x0D,
+            XORI  = 0x0E,
             LUI   = 0x0F,
             LB    = 0x20,
             LW    = 0x23,
@@ -160,13 +161,16 @@ namespace PlayStation
             SRA  = 0x03,
             JR   = 0x08,
             JALR = 0x09,
+            MFHI = 0x10,
             MFLO = 0x12,
             DIV  = 0x1A,
+            DIVU = 0x1B,
             ADD  = 0x20,
             ADDU = 0x21,
             SUBU = 0x23,
             AND  = 0x24,
             OR   = 0x25,
+            SLT  = 0x2A,
             SLTU = 0x2B
         };
 

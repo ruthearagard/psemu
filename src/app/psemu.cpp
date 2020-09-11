@@ -67,7 +67,7 @@ PSEmu::PSEmu() noexcept : emu_thread(new Emulator(this))
         emu_thread->cpu.gpr[28] = initial_gp;
 
         emu_thread->cpu.instruction.word =
-        emu_thread->bus.memory_read<PlayStation::Word>(emu_thread->cpu.pc);
+        emu_thread->bus.memory_access<PlayStation::Word>(emu_thread->cpu.pc);
 
         // The emulator thread is halted during this process, restart it now
         // that the EXE has been injected.
