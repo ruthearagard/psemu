@@ -1,0 +1,11 @@
+{
+    "name": "psemu",
+    "version-string": "1.0.0-dev",
+    "homepage": "https://github.com/ruthearagard/psemu",
+    "description": "Sony PlayStation emulator",
+    
+    "dependencies":
+    [
+        "qt5"
+    ]
+}
