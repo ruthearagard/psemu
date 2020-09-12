@@ -163,6 +163,8 @@ namespace PlayStation
             JALR = 0x09,
             MFHI = 0x10,
             MFLO = 0x12,
+            MTLO = 0x13,
+            MULT = 0x18,
             DIV  = 0x1A,
             DIVU = 0x1B,
             ADD  = 0x20,

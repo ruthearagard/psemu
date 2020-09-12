@@ -125,6 +125,22 @@ auto CPU::step() noexcept -> void
                     gpr[instruction.rd] = lo;
                     break;
 
+                case SPECIALInstruction::MTLO:
+                    lo = gpr[instruction.rs];
+                    break;
+
+                case SPECIALInstruction::MULT:
+                {
+                    const uint64_t product =
+                    static_cast<SignedWord>(gpr[instruction.rs]) *
+                    static_cast<SignedWord>(gpr[instruction.rt]);
+
+                    hi = product >> 32;
+                    lo = product & 0x00000000FFFFFFFF;
+
+                    break;
+                }
+
                 case SPECIALInstruction::DIV:
                     lo = static_cast<SignedWord>(gpr[instruction.rs]) /
                          static_cast<SignedWord>(gpr[instruction.rt]);
@@ -204,12 +220,12 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::J:
-            next_pc = ((target() << 2) + (pc & 0xF0000000)) - 4;
+            next_pc = ((target() << 2) | (pc & 0xF0000000)) - 4;
             break;
 
         case Instruction::JAL:
             gpr[31] = pc + 8;
-            next_pc = ((target() << 2) + (pc & 0xF0000000)) - 4;
+            next_pc = ((target() << 2) | (pc & 0xF0000000)) - 4;
 
             break;
 
