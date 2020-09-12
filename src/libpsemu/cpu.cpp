@@ -174,7 +174,8 @@ auto CPU::step() noexcept -> void
                     break;
 
                 default:
-                    return;
+                    __debugbreak();
+                    break;
             }
             break;
 
@@ -188,7 +189,6 @@ auto CPU::step() noexcept -> void
         // do not understand why this is the case, but psxtest_cpu.exe confirms
         // this behavior is accurate.
         case InstructionGroup::BCOND:
-        {
             // Linking occurs regardless of whether or not the branch will be
             // taken. The request to link is determined by inspecting the most
             // significant bit of the `rt` instruction field. A value of 1
@@ -202,7 +202,6 @@ auto CPU::step() noexcept -> void
             branch_if(static_cast<int32_t>((gpr[instruction.rs]) ^
                                            (instruction.rt << 31)) < 0);
             break;
-        }
 
         case Instruction::J:
             next_pc = ((target() << 2) + (pc & 0xF0000000)) - 4;
@@ -278,7 +277,8 @@ auto CPU::step() noexcept -> void
                     break;
 
                 default:
-                    return;
+                    __debugbreak();
+                    break;
             }
             break;
 
@@ -311,7 +311,8 @@ auto CPU::step() noexcept -> void
             break;
 
         default:
-            return;
+            __debugbreak();
+            break;
     }
     instruction.word = bus.memory_access<Word>(pc += 4);
 }

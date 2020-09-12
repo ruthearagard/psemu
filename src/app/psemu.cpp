@@ -54,10 +54,12 @@ PSEmu::PSEmu() noexcept : emu_thread(new Emulator(this))
         std::memcpy(&dest_in_ram, &file_data[0x18], sizeof(PlayStation::Word));
         std::memcpy(&file_size,   &file_data[0x1C], sizeof(PlayStation::Word));
 
-        for (auto index{ 0x800 }; index != file_size; ++index, dest_in_ram++)
+        for (auto index{ 0x800 }; index != file_size;
+             index += 4, dest_in_ram += 4)
         {
-            emu_thread->bus.ram.data()[dest_in_ram & 0x1FFFFFFF] =
-            file_data[index];
+            std::memcpy(&emu_thread->bus.ram.data()[dest_in_ram & 0x1FFF'FFFF],
+                        &file_data[index],
+                        sizeof(PlayStation::Word));
         }
 
         file.close();
@@ -73,7 +75,6 @@ PSEmu::PSEmu() noexcept : emu_thread(new Emulator(this))
         // that the EXE has been injected.
         emu_thread->start();
     });
-
     emu_thread->start();
 }
 
