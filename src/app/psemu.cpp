@@ -65,8 +65,7 @@ PSEmu::PSEmu() noexcept : emu_thread(new Emulator(this))
         file.close();
 
         emu_thread->cpu.pc      = initial_pc;
-        emu_thread->cpu.next_pc = initial_pc;
-        emu_thread->cpu.gpr[28] = initial_gp;
+        emu_thread->cpu.next_pc = initial_pc + 4;
 
         emu_thread->cpu.instruction.word =
         emu_thread->bus.memory_access<PlayStation::Word>(emu_thread->cpu.pc);

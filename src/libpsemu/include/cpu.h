@@ -40,6 +40,9 @@ namespace PlayStation
         /// @brief General purpose registers.
         std::array<Word, 32> gpr;
 
+        /// @brief System control co-processor registers (COP0)
+        std::array<Word, 32> cop0;
+
         /// @brief Program counter.
         Word pc;
 
@@ -80,11 +83,8 @@ namespace PlayStation
             Word word;
         } instruction;
 
-        /// @brief System control co-processor instructions (COP0)
-        std::array<Word, 32> cop0;
-
         /// @brief Returns the 26-bit target address.
-        auto target() const noexcept -> unsigned int;
+        auto target() const noexcept -> Word;
 
         /// @brief Returns the lower 16-bits of the instruction.
         auto immediate() const noexcept -> Halfword;
@@ -93,33 +93,13 @@ namespace PlayStation
         /// by MIPS conventions.
         auto offset() const noexcept -> Halfword;
 
-        /// @brief Same as referencing the `rs` field of the current
-        /// instruction, merely an alias as defined by MIPS conventions.
-        auto base() const noexcept -> unsigned int;
+        /// @brief Same as the `rs` instruction field, merely an alias as
+        /// defined by MIPS conventions.
+        auto base() const noexcept -> Word;
 
-        /// @brief Returns the current virtual address.
+        /// @brief Gets the current virtual address.
+        /// @return The current virtual address.
         auto vaddr() const noexcept -> Word;
-
-        /// @brief Instruction
-        enum COP0Register
-        {
-            BPC   = 3,
-            BDA   = 5,
-            TAR   = 6,
-            DCIC  = 7,
-            BDAM  = 9,
-            BPCM  = 11,
-            SR    = 12,
-            Cause = 13
-        };
-
-        /// @brief Instruction groups
-        enum InstructionGroup
-        {
-            SPECIAL = 0x00,
-            BCOND   = 0x01,
-            COP0    = 0x10
-        };
 
         /// @brief Inherent co-processor instructions
         enum CoprocessorInstruction
@@ -128,7 +108,28 @@ namespace PlayStation
             MT = 0x04
         };
 
-        /// @brief Instructions referenced in opcode bits [31:26].
+        /// @brief System control co-processor (COP0) registers
+        enum COP0Register
+        {
+            SR = 12
+        };
+
+        /// @brief Status register (SR) bits
+        enum SRBits
+        {
+            IsC = 1 << 16
+        };
+
+private:
+        /// @brief Instruction groups
+        enum InstructionGroup
+        {
+            SPECIAL = 0x00,
+            BCOND   = 0x01,
+            COP0    = 0x10
+        };
+
+        /// @brief Instructions located in bits [31:26] of the current opcode.
         enum Instruction
         {
             J     = 0x02,
@@ -143,7 +144,6 @@ namespace PlayStation
             SLTIU = 0x0B,
             ANDI  = 0x0C,
             ORI   = 0x0D,
-            XORI  = 0x0E,
             LUI   = 0x0F,
             LB    = 0x20,
             LW    = 0x23,
@@ -153,7 +153,7 @@ namespace PlayStation
             SW    = 0x2B
         };
 
-        /// @brief Instructions referenced in opcode bits [5:0].
+        /// @brief Instructions located in bits [6:0] of the current opcode.
         enum SPECIALInstruction
         {
             SLL  = 0x00,
@@ -163,8 +163,6 @@ namespace PlayStation
             JALR = 0x09,
             MFHI = 0x10,
             MFLO = 0x12,
-            MTLO = 0x13,
-            MULT = 0x18,
             DIV  = 0x1A,
             DIVU = 0x1B,
             ADD  = 0x20,
@@ -176,17 +174,8 @@ namespace PlayStation
             SLTU = 0x2B
         };
 
-private:
-        /// @brief Bits of the status register
-        enum SRBits
-        {
-            IsC = 1 << 16
-        };
-
-        /// @brief Branches to the target address if the contents of general
-        /// purpose register `rs` and general purpose register `rt` yield
-        /// `true` with respect to the operator.
-        /// @param op The operator to use.
+        /// @brief Branches to target address if the condition is met.
+        /// @param condition_met The result of an expression.
         auto branch_if(const bool condition_met) noexcept -> void;
 
         /// @brief The program counter to use when a reset exception is

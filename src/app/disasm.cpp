@@ -16,8 +16,7 @@
 #include "disasm.h"
 
 Disassembler::Disassembler(const PlayStation::CPU& c,
-                           const PlayStation::SystemBus& b) noexcept : cpu(c),
-                                                                       bus(b)
+                           PlayStation::SystemBus& b) noexcept : cpu(c), bus(b)
 { }
 
 /// @brief Disassembles the current instruction before it is executed.

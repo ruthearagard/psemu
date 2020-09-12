@@ -28,15 +28,19 @@ auto CPU::reset() noexcept -> void
 {
     gpr  = { };
     cop0 = { };
+    hi   = { };
+    lo   = { };
 
     pc      = RESET_VECTOR;
-    next_pc = RESET_VECTOR;
+    next_pc = pc + 4;
 
+    // We load the next instruction here to give debuggers a chance to access
+    // it.
     instruction.word = bus.memory_access<Word>(pc);
 }
 
 /// @brief Returns the 26-bit target address.
-auto CPU::target() const noexcept -> unsigned int
+auto CPU::target() const noexcept -> Word
 {
     return instruction.word & 0x03FFFFFF;
 }
@@ -54,34 +58,35 @@ auto CPU::offset() const noexcept -> Halfword
     return immediate();
 }
 
-/// @brief Same as referencing the `rs` field of the current
-/// instruction, merely an alias as defined by MIPS conventions.
-auto CPU::base() const noexcept -> unsigned int
+/// @brief Same as the `rs` instruction field, merely an alias as defined by
+/// MIPS conventions.
+auto CPU::base() const noexcept -> Word
 {
     return instruction.rs;
 }
 
-/// @brief Returns the current virtual address.
+/// @brief Gets the current virtual address.
+/// @return The current virtual address.
 auto CPU::vaddr() const noexcept -> Word
 {
     return static_cast<SignedHalfword>(offset()) + gpr[base()];
 }
 
-/// @brief Branches to the target address if the contents of general purpose
-/// register `rs` and general purpose register `rt` yield `true` with respect
-/// to the operator.
-/// @param op The operator to use.
+/// @brief Branches to target address if the condition is met.
+/// @param condition_met The result of an expression.
 auto CPU::branch_if(const bool condition_met) noexcept -> void
 {
     if (condition_met)
     {
-        next_pc = (static_cast<SignedHalfword>(offset()) << 2) + pc;
+        next_pc = static_cast<SignedHalfword>(offset() << 2) + pc;
     }
 }
 
 /// @brief Executes the next instruction.
 auto CPU::step() noexcept -> void
 {
+    instruction.word = bus.memory_access<Word>(pc);
+
     pc = next_pc;
     next_pc += 4;
 
@@ -91,13 +96,17 @@ auto CPU::step() noexcept -> void
             switch (instruction.funct)
             {
                 case SPECIALInstruction::SLL:
-                    gpr[instruction.rd] = gpr[instruction.rt]
-                                          << instruction.shamt;
+                    gpr[instruction.rd] =
+                    gpr[instruction.rt] <<
+                    instruction.shamt;
+
                     break;
 
                 case SPECIALInstruction::SRL:
-                    gpr[instruction.rd] = gpr[instruction.rt]
-                                          >> instruction.shamt;
+                    gpr[instruction.rd] =
+                    gpr[instruction.rt] >>
+                    instruction.shamt;
+
                     break;
 
                 case SPECIALInstruction::SRA:
@@ -108,12 +117,12 @@ auto CPU::step() noexcept -> void
                     break;
 
                 case SPECIALInstruction::JR:
-                    next_pc = gpr[instruction.rs] - 4;
+                    next_pc = gpr[instruction.rs];
                     break;
 
                 case SPECIALInstruction::JALR:
-                    gpr[instruction.rd] = pc + 8;
-                    next_pc = gpr[instruction.rs] - 4;
+                    gpr[instruction.rd] = next_pc;
+                    next_pc = gpr[instruction.rs];
 
                     break;
 
@@ -124,22 +133,6 @@ auto CPU::step() noexcept -> void
                 case SPECIALInstruction::MFLO:
                     gpr[instruction.rd] = lo;
                     break;
-
-                case SPECIALInstruction::MTLO:
-                    lo = gpr[instruction.rs];
-                    break;
-
-                case SPECIALInstruction::MULT:
-                {
-                    const uint64_t product =
-                    static_cast<SignedWord>(gpr[instruction.rs]) *
-                    static_cast<SignedWord>(gpr[instruction.rt]);
-
-                    hi = product >> 32;
-                    lo = product & 0x00000000FFFFFFFF;
-
-                    break;
-                }
 
                 case SPECIALInstruction::DIV:
                     lo = static_cast<SignedWord>(gpr[instruction.rs]) /
@@ -158,23 +151,31 @@ auto CPU::step() noexcept -> void
 
                 case SPECIALInstruction::ADD:
                 case SPECIALInstruction::ADDU:
-                    gpr[instruction.rd] = gpr[instruction.rs] +
-                                          gpr[instruction.rt];
+                    gpr[instruction.rd] =
+                    gpr[instruction.rs] +
+                    gpr[instruction.rt];
+
                     break;
 
                 case SPECIALInstruction::SUBU:
-                    gpr[instruction.rd] = gpr[instruction.rs] -
-                                          gpr[instruction.rt];
+                    gpr[instruction.rd] =
+                    gpr[instruction.rs] -
+                    gpr[instruction.rt];
+
                     break;
 
                 case SPECIALInstruction::AND:
-                    gpr[instruction.rd] = gpr[instruction.rs] &
-                                          gpr[instruction.rt];
+                    gpr[instruction.rd] =
+                    gpr[instruction.rs] &
+                    gpr[instruction.rt];
+
                     break;
 
                 case SPECIALInstruction::OR:
-                    gpr[instruction.rd] = gpr[instruction.rs] |
-                                          gpr[instruction.rt];
+                    gpr[instruction.rd] =
+                    gpr[instruction.rs] |
+                    gpr[instruction.rt];
+
                     break;
 
                 case SPECIALInstruction::SLT:
@@ -185,8 +186,10 @@ auto CPU::step() noexcept -> void
                     break;
 
                 case SPECIALInstruction::SLTU:
-                    gpr[instruction.rd] = gpr[instruction.rs] <
-                                          gpr[instruction.rt];
+                    gpr[instruction.rd] =
+                    gpr[instruction.rs] <
+                    gpr[instruction.rt];
+
                     break;
 
                 default:
@@ -213,19 +216,19 @@ auto CPU::step() noexcept -> void
             // register (31). A value of 0 does not.
             if (instruction.rt & 0x10)
             {
-                gpr[31] = pc + 8;
+                gpr[31] = next_pc;
             }
             branch_if(static_cast<int32_t>((gpr[instruction.rs]) ^
                                            (instruction.rt << 31)) < 0);
             break;
 
         case Instruction::J:
-            next_pc = ((target() << 2) | (pc & 0xF0000000)) - 4;
+            next_pc = (target() << 2) | (pc & 0xF0000000);
             break;
 
         case Instruction::JAL:
-            gpr[31] = pc + 8;
-            next_pc = ((target() << 2) | (pc & 0xF0000000)) - 4;
+            gpr[31] = next_pc;
+            next_pc = (target() << 2) | (pc & 0xF0000000);
 
             break;
 
@@ -238,17 +241,19 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::BLEZ:
-            branch_if(static_cast<int32_t>(gpr[instruction.rs]) <= 0);
+            branch_if(static_cast<SignedWord>(gpr[instruction.rs]) <= 0);
             break;
 
         case Instruction::BGTZ:
-            branch_if(static_cast<int32_t>(gpr[instruction.rs]) > 0);
+            branch_if(gpr[instruction.rs] > 0);
             break;
 
-        case Instruction::ADDI: // overflow
+        case Instruction::ADDI:
         case Instruction::ADDIU:
-            gpr[instruction.rt] = gpr[instruction.rs] +
-                                  static_cast<SignedHalfword>(immediate());
+            gpr[instruction.rt] =
+            gpr[instruction.rs] +
+            static_cast<SignedHalfword>(immediate());
+
             break;
 
         case Instruction::SLTI:
@@ -261,7 +266,7 @@ auto CPU::step() noexcept -> void
         case Instruction::SLTIU:
             gpr[instruction.rt] =
             gpr[instruction.rs] <
-            static_cast<Word>(static_cast<SignedHalfword>(immediate()));
+            static_cast<Word>(static_cast<Halfword>(immediate()));
 
             break;
 
@@ -271,10 +276,6 @@ auto CPU::step() noexcept -> void
 
         case Instruction::ORI:
             gpr[instruction.rt] = gpr[instruction.rs] | immediate();
-            break;
-
-        case Instruction::XORI:
-            gpr[instruction.rt] = gpr[instruction.rs] ^ immediate();
             break;
 
         case Instruction::LUI:
@@ -311,7 +312,8 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::SB:
-            bus.memory_access<Byte>(vaddr(), gpr[instruction.rt] & 0x000000FF);
+            bus.memory_access<Byte>(vaddr(),
+                                    gpr[instruction.rt] & 0x000000FF);
             break;
 
         case Instruction::SH:
@@ -330,5 +332,6 @@ auto CPU::step() noexcept -> void
             __debugbreak();
             break;
     }
-    instruction.word = bus.memory_access<Word>(pc += 4);
+
+    instruction.word = bus.memory_access<Word>(pc);
 }

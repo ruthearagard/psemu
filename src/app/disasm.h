@@ -25,7 +25,7 @@ class Disassembler : public QObject
 
 public:
     Disassembler(const PlayStation::CPU& c,
-                 const PlayStation::SystemBus& b) noexcept;
+                 PlayStation::SystemBus& b) noexcept;
 
     /// @brief Disassembles the current instruction before it is executed.
     auto before() noexcept -> void;
@@ -262,7 +262,7 @@ private:
     const PlayStation::CPU& cpu;
 
     /// @brief PlayStation system bus instance
-    const PlayStation::SystemBus& bus;
+    PlayStation::SystemBus& bus;
 
     /// @brief Current disassembly result
     QString result;
