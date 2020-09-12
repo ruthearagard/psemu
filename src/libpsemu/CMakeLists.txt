@@ -26,8 +26,12 @@
 #
 # Source (heh): https://cmake.org/cmake/help/v3.13/command/file.html#filesystem
 
-set(SRCS bus.cpp cpu.cpp ps.cpp)
-set(HDRS include/bus.h include/cpu.h include/ps.h include/types.h)
+set(SRCS bus.cpp cpu.cpp gpu.cpp ps.cpp)
+set(HDRS include/bus.h
+         include/cpu.h
+         include/gpu.h
+         include/ps.h
+         include/types.h)
 
 add_library(psemu STATIC ${SRCS} ${HDRS})
 

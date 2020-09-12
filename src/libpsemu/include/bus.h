@@ -16,6 +16,7 @@
 
 #include <cstdio>
 #include <vector>
+#include "gpu.h"
 #include "types.h"
 
 namespace PlayStation
@@ -55,6 +56,30 @@ namespace PlayStation
                 case 0x0000 ... 0x001F:
                     std::memcpy(&result, &ram.data()[paddr], sizeof(T));
                     return result;
+
+                case 0x1F80:
+                    switch ((paddr & 0x0000F000) >> 12)
+                    {
+                        // I/O Ports
+                        case 1:
+                            switch (paddr & 0x00000FFF)
+                            {
+                                // Stubbed for now just to get past detection
+                                // loops.
+                                case GPU::Registers::GPUSTAT:
+                                    return 0x1FF00000;
+
+                                default:
+                                    printf("Unknown memory read: 0x%08X, returning 0\n",
+                                        paddr);
+                                    return result;
+                            }
+
+                        default:
+                            printf("Unknown memory read: 0x%08X, returning 0\n",
+                                paddr);
+                            return result;
+                    }
 
                 // [0x1FC00000 - 0x1FC7FFFF]: BIOS ROM (512 KB)
                 case 0x1FC0 ... 0x1FC7:
@@ -98,6 +123,9 @@ namespace PlayStation
 
         /// @brief [0x00000000 - 0x001FFFFF]: Main RAM
         std::vector<Byte> ram;
+
+        /// @brief GPU device instance
+        GPU gpu;
 
     private:
         /// @brief Number of bytes that composes the main RAM area.

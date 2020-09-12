@@ -12,26 +12,17 @@
 // OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-#include "bus.h"
+#pragma once
 
-using namespace PlayStation;
-
-/// @brief Initializes the system bus.
-SystemBus::SystemBus() noexcept
+namespace PlayStation
 {
-    ram.resize(RAM_SIZE);
-}
-
-/// @brief Resets the system bus to the startup state.
-auto SystemBus::reset() noexcept -> void
-{
-    ram.clear();
-}
-
-/// @brief Sets the BIOS data.
-/// @param data The data to use. Be advised that this function does not check
-/// whether or not the data is valid.
-auto SystemBus::set_bios_data(const std::vector<Byte>& data) noexcept -> void
-{
-    bios = data;
+    /// @brief Defines a graphics processing unit (GPU).
+    class GPU
+    {
+    public:
+        enum Registers
+        {
+            GPUSTAT = 0x814
+        };
+    };
 }
