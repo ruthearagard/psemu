@@ -31,6 +31,7 @@ auto System::set_bios_data(const std::vector<Byte>& data) noexcept -> void
 /// @brief Resets the system to the startup state.
 auto System::reset() noexcept -> void
 {
+    bus.reset();
     cpu.reset();
 }
 

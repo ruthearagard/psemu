@@ -251,6 +251,12 @@ auto Disassembler::before() noexcept -> void
                       .arg(offset < 0 ? "-" : "")
                       .arg(offset_str)
                       .arg(gpr[cpu.base()]);
+
+            post_regs.push_back(PostExecutionData
+            {
+                cpu.gpr[cpu.instruction.rt],
+                gpr[cpu.instruction.rt]
+            });
             index += 4;
         }
     }

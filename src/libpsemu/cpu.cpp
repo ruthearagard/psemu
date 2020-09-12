@@ -334,4 +334,5 @@ auto CPU::step() noexcept -> void
     }
 
     instruction.word = bus.memory_access<Word>(pc);
+    gpr[0] = 0x00000000;
 }

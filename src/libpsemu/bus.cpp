@@ -18,8 +18,12 @@ using namespace PlayStation;
 
 /// @brief Initializes the system bus.
 SystemBus::SystemBus() noexcept
+{ }
+
+/// @brief Resets the system bus to the startup state.
+auto SystemBus::reset() noexcept -> void
 {
-    ram.reserve(RAM_SIZE);
+    ram.resize(RAM_SIZE);
 }
 
 /// @brief Sets the BIOS data.

@@ -36,7 +36,7 @@ private:
     Disassembler disasm;
 
     /// @brief Are we generating a trace log?
-    bool tracing{ true };
+    bool tracing{ false };
 
 signals:
     /// @brief Emitted when it is time to inject the EXE.

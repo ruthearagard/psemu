@@ -27,6 +27,9 @@ namespace PlayStation
         /// @brief Initializes the system bus.
         SystemBus() noexcept;
 
+        /// @brief Resets the system bus to the startup state.
+        auto reset() noexcept -> void;
+
         /// @brief Sets the BIOS data.
         /// @param data The data to use. Be advised that this function does not
         /// check whether or not the data is valid.
