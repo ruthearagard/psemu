@@ -20,12 +20,14 @@ using namespace PlayStation;
 SystemBus::SystemBus() noexcept
 {
     ram.resize(RAM_SIZE);
+    scratchpad.resize(SCRATCHPAD_SIZE);
 }
 
 /// @brief Resets the system bus to the startup state.
 auto SystemBus::reset() noexcept -> void
 {
     ram.clear();
+    scratchpad.clear();
 }
 
 /// @brief Sets the BIOS data.

@@ -60,6 +60,19 @@ auto Disassembler::before() noexcept -> void
             case PlayStation::CPU::CoprocessorInstruction::MT:
                 instruction = "mtc0 $rd_cop0";
                 break;
+
+            default:
+                switch (cpu.instruction.funct)
+                {
+                    case PlayStation::CPU::COP0Instruction::RFE:
+                        instruction = "rfe";
+                        break;
+
+                    default:
+                        instruction = "illegal";
+                        break;
+                }
+                break;
         }
     }
 

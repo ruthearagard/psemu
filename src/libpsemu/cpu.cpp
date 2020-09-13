@@ -72,6 +72,38 @@ auto CPU::vaddr() const noexcept -> Word
     return static_cast<SignedHalfword>(offset()) + gpr[base()];
 }
 
+/// @brief Traps an exception.
+/// @param exc The exception to trap.
+/// @param bad_vaddr The bad virtual address, if any.
+auto CPU::trap(const Exception exc, const Word bad_vaddr) noexcept -> void
+{
+    // So on an exception, the CPU:
+
+    // 1) sets up EPC to point to the restart location.
+    cop0[COP0Register::EPC] = pc;
+
+    // 2) The pre-existing user-mode and interrupt-enable flags in SR are saved
+    //    by pushing the 3 - entry stack inside SR, and changing to kernel mode
+    //    with interrupts disabled.
+    cop0[COP0Register::SR] = (cop0[COP0Register::SR] & 0xFFFFFFC0) |
+                            ((cop0[COP0Register::SR] & 0x0000000F) << 2);
+
+    // 3a) Cause is setup so that software can see the reason for the
+    //     exception.
+    cop0[COP0Register::Cause] = (cop0[COP0Register::Cause] & ~0xFFFF00FF) |
+                                (exc << 2);
+
+    // 3b) On address exceptions BadVaddr is also set.
+    if (exc == Exception::AdEL)
+    {
+        cop0[COP0Register::BadA] = bad_vaddr;
+    }
+
+    // 4) Transfers control to the exception entry point.
+    pc      = 0x80000080;
+    next_pc = pc + 4;
+}
+
 /// @brief Branches to target address if the condition is met.
 /// @param condition_met The result of an expression.
 auto CPU::branch_if(const bool condition_met) noexcept -> void
@@ -85,6 +117,11 @@ auto CPU::branch_if(const bool condition_met) noexcept -> void
 /// @brief Executes the next instruction.
 auto CPU::step() noexcept -> void
 {
+    if ((pc & 0x00000003) != 0)
+    {
+        trap(Exception::AdEL);
+    }
+
     instruction.word = bus.memory_access<Word>(pc);
 
     pc = next_pc;
@@ -116,6 +153,27 @@ auto CPU::step() noexcept -> void
 
                     break;
 
+                case SPECIALInstruction::SLLV:
+                    gpr[instruction.rd] =
+                    gpr[instruction.rt] <<
+                   (gpr[instruction.rs] & 0x0000001F);
+
+                    break;
+
+                case SPECIALInstruction::SRLV:
+                    gpr[instruction.rd] =
+                    gpr[instruction.rt] >>
+                   (gpr[instruction.rs] & 0x0000001F);
+
+                    break;
+
+                case SPECIALInstruction::SRAV:
+                    gpr[instruction.rd] =
+                    static_cast<SignedWord>(gpr[instruction.rt]) >>
+                    (gpr[instruction.rs] & 0x0000001F);
+
+                    break;
+
                 case SPECIALInstruction::JR:
                     next_pc = gpr[instruction.rs];
                     break;
@@ -126,28 +184,116 @@ auto CPU::step() noexcept -> void
 
                     break;
 
+                case SPECIALInstruction::SYSCALL:
+                    trap(Exception::Sys);
+                    break;
+
+                case SPECIALInstruction::BREAK:
+                    trap(Exception::Bp);
+                    break;
+
                 case SPECIALInstruction::MFHI:
                     gpr[instruction.rd] = hi;
+                    break;
+
+                case SPECIALInstruction::MTHI:
+                    hi = gpr[instruction.rs];
                     break;
 
                 case SPECIALInstruction::MFLO:
                     gpr[instruction.rd] = lo;
                     break;
 
-                case SPECIALInstruction::DIV:
-                    lo = static_cast<SignedWord>(gpr[instruction.rs]) /
-                         static_cast<SignedWord>(gpr[instruction.rt]);
+                case SPECIALInstruction::MTLO:
+                    lo = gpr[instruction.rs];
+                    break;
 
-                    hi = static_cast<SignedWord>(gpr[instruction.rs]) %
-                         static_cast<SignedWord>(gpr[instruction.rt]);
+                case SPECIALInstruction::MULT:
+                {
+                    const uint64_t product =
+                    static_cast<SignedWord>(gpr[instruction.rs]) *
+                    static_cast<SignedWord>(gpr[instruction.rt]);
+
+                    lo = product & 0x00000000FFFFFFFF;
+                    hi = product >> 32;
 
                     break;
+                }
+
+                case SPECIALInstruction::MULTU:
+                {
+                    const uint64_t product = gpr[instruction.rs] *
+                                             gpr[instruction.rt];
+
+                    lo = product & 0x00000000FFFFFFFF;
+                    hi = product >> 32;
+
+                    break;
+                }
+
+                case SPECIALInstruction::DIV:
+                {
+                    // The result of a division by zero is consistent with the
+                    // result of a simple radix-2 ("one bit at a time")
+                    // implementation.
+                    const SignedWord rt
+                    {
+                        static_cast<SignedWord>(gpr[instruction.rt])
+                    };
+
+                    const SignedWord rs
+                    {
+                        static_cast<SignedWord>(gpr[instruction.rs])
+                    };
+
+                    // Divisor is zero
+                    if (rt == 0)
+                    {
+                        // If the dividend is negative, the quotient is 1
+                        // (0x00000001), and if the dividend is positive or
+                        // zero, the quotient is -1 (0xFFFFFFFF).
+                        lo = (rs < 0) ? 0x00000001 : 0xFFFFFFFF;
+
+                        // In both cases the remainder equals the dividend.
+                        hi = static_cast<Word>(rs);
+                    }
+                    // Will trigger an arithmetic exception when dividing
+                    // 0x80000000 by 0xFFFFFFFF. The result of the division is
+                    // a quotient of 0x80000000 and a remainder of 0x00000000.
+                    else if (static_cast<Word>(rs) == 0x80000000 &&
+                             static_cast<Word>(rt) == 0xFFFFFFFF)
+                    {
+                        lo = static_cast<Word>(rs);
+                        hi = 0x00000000;
+                    }
+                    else
+                    {
+                        lo = rs / rt;
+                        hi = rs % rt;
+                    }
+                    break;
+                }
 
                 case SPECIALInstruction::DIVU:
-                    lo = gpr[instruction.rs] / gpr[instruction.rt];
-                    hi = gpr[instruction.rs] % gpr[instruction.rt];
+                {
+                    const Word rt{ gpr[instruction.rt] };
+                    const Word rs{ gpr[instruction.rs] };
 
+                    // In the case of unsigned division, the dividend can't be
+                    // negative and thus the quotient is always -1 (0xFFFFFFFF)
+                    // and the remainder equals the dividend.
+                    if (rt == 0)
+                    {
+                        lo = 0xFFFFFFFF;
+                        hi = rs;
+                    }
+                    else
+                    {
+                        lo = rs / rt;
+                        hi = rs % rt;
+                    }
                     break;
+                }
 
                 case SPECIALInstruction::ADD:
                 case SPECIALInstruction::ADDU:
@@ -157,6 +303,7 @@ auto CPU::step() noexcept -> void
 
                     break;
 
+                case SPECIALInstruction::SUB:
                 case SPECIALInstruction::SUBU:
                     gpr[instruction.rd] =
                     gpr[instruction.rs] -
@@ -175,6 +322,20 @@ auto CPU::step() noexcept -> void
                     gpr[instruction.rd] =
                     gpr[instruction.rs] |
                     gpr[instruction.rt];
+
+                    break;
+
+                case SPECIALInstruction::XOR:
+                    gpr[instruction.rd] =
+                    gpr[instruction.rs] ^
+                    gpr[instruction.rt];
+
+                    break;
+
+                case SPECIALInstruction::NOR:
+                    gpr[instruction.rd] =
+                  ~(gpr[instruction.rs] |
+                    gpr[instruction.rt]);
 
                     break;
 
@@ -278,6 +439,10 @@ auto CPU::step() noexcept -> void
             gpr[instruction.rt] = gpr[instruction.rs] | immediate();
             break;
 
+        case Instruction::XORI:
+            gpr[instruction.rt] = gpr[instruction.rs] ^ immediate();
+            break;
+
         case Instruction::LUI:
             gpr[instruction.rt] = immediate() << 16;
             break;
@@ -294,7 +459,19 @@ auto CPU::step() noexcept -> void
                     break;
 
                 default:
-                    __debugbreak();
+                    switch (instruction.funct)
+                    {
+                        case COP0Instruction::RFE:
+                            cop0[COP0Register::SR] =
+                           (cop0[COP0Register::SR] & 0xFFFFFFF0) |
+                          ((cop0[COP0Register::SR] & 0x0000003C) >> 2);
+
+                            break;
+
+                        default:
+                            __debugbreak();
+                            break;
+                    }
                     break;
             }
             break;
@@ -303,6 +480,44 @@ auto CPU::step() noexcept -> void
             gpr[instruction.rt] = bus.memory_access<SignedByte>(vaddr());
             break;
 
+        case Instruction::LH:
+            gpr[instruction.rt] = bus.memory_access<SignedHalfword>(vaddr());
+            break;
+
+        case Instruction::LWL:
+        {
+            const Word m_vaddr{ vaddr() };
+            const Word data{ bus.memory_access<Word>(m_vaddr & 0xFFFFFFFC) };
+
+            switch (m_vaddr & 3)
+            {
+                case 0:
+                    gpr[instruction.rt] =
+                    (gpr[instruction.rt] & 0x00FFFFFF) | (data << 24);
+
+                    break;
+
+                case 1:
+                    gpr[instruction.rt] =
+                    (gpr[instruction.rt] & 0x0000FFFF) | (data << 16);
+
+                    break;
+
+                case 2:
+                    gpr[instruction.rt] =
+                    (gpr[instruction.rt] & 0x000000FF) | (data << 8);
+
+                    break;
+
+                case 3:
+                    gpr[instruction.rt] =
+                    (gpr[instruction.rt] & 0x00000000) | (data << 0);
+
+                    break;
+            }
+            break;
+        }
+
         case Instruction::LW:
             gpr[instruction.rt] = bus.memory_access<Word>(vaddr());
             break;
@@ -310,6 +525,41 @@ auto CPU::step() noexcept -> void
         case Instruction::LBU:
             gpr[instruction.rt] = bus.memory_access<Byte>(vaddr());
             break;
+
+        case Instruction::LHU:
+            gpr[instruction.rt] = bus.memory_access<Halfword>(vaddr());
+            break;
+
+        case Instruction::LWR:
+        {
+            const Word m_vaddr{ vaddr() };
+            const Word data{ bus.memory_access<Word>(m_vaddr & 0xFFFFFFFC) };
+
+            switch (m_vaddr & 3)
+            {
+                case 0:
+                    gpr[instruction.rt] = data;
+                    break;
+
+                case 1:
+                    gpr[instruction.rt] =
+                    (gpr[instruction.rt] & 0xFF000000) | (data >> 8);
+
+                    break;
+
+                case 2:
+                    gpr[instruction.rt] =
+                    (gpr[instruction.rt] & 0xFFFF0000) | (data >> 16);
+
+                    break;
+
+                case 3:
+                    gpr[instruction.rt] =
+                    (gpr[instruction.rt] & 0xFFFFFF00) | (data >> 24);
+
+                    break;
+            }
+        }
 
         case Instruction::SB:
             bus.memory_access<Byte>(vaddr(),
@@ -321,12 +571,68 @@ auto CPU::step() noexcept -> void
                                         gpr[instruction.rt] & 0x0000FFFF);
             break;
 
+        case Instruction::SWL:
+        {
+            const Word m_vaddr{ vaddr() };
+            Word data{ bus.memory_access<Word>(m_vaddr & 0xFFFFFFFC) };
+
+            switch (m_vaddr & 3)
+            {
+                case 0:
+                    data = (data & 0xFFFFFF00) | (gpr[instruction.rt] >> 24);
+                    break;
+
+                case 1:
+                    data = (data & 0xFFFF0000) | (gpr[instruction.rt] >> 16);
+                    break;
+
+                case 2:
+                    data = (data & 0xFF000000) | (gpr[instruction.rt] >> 8);
+                    break;
+
+                case 3:
+                    data = (data & 0x00000000) | (gpr[instruction.rt] >> 0);
+                    break;
+            }
+
+            bus.memory_access<Word>(m_vaddr & 0xFFFFFFFC, data);
+            break;
+        }
+
         case Instruction::SW:
             if (!(cop0[COP0Register::SR] & SRBits::IsC))
             {
                 bus.memory_access<Word>(vaddr(), gpr[instruction.rt]);
             }
             break;
+
+        case Instruction::SWR:
+        {
+            const Word m_vaddr{ vaddr() };
+            Word data{ bus.memory_access<Word>(m_vaddr & 0xFFFFFFFC) };
+
+            switch (m_vaddr & 3)
+            {
+                case 0:
+                    data = (data & 0x00000000) | (gpr[instruction.rt] << 0);
+                    break;
+
+                case 1:
+                    data = (data & 0x000000FF) | (gpr[instruction.rt] << 8);
+                    break;
+
+                case 2:
+                    data = (data & 0x0000FFFF) | (gpr[instruction.rt] << 16);
+                    break;
+
+                case 3:
+                    data = (data & 0x00FFFFFF) | (gpr[instruction.rt] << 24);
+                    break;
+            }
+
+            bus.memory_access<Word>(m_vaddr & 0xFFFFFFFC, data);
+            break;
+        }
 
         default:
             __debugbreak();

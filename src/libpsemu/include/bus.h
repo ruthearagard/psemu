@@ -60,6 +60,13 @@ namespace PlayStation
                 case 0x1F80:
                     switch ((paddr & 0x0000F000) >> 12)
                     {
+                        // Scratchpad
+                        case 0:
+                            std::memcpy(&result,
+                                        &scratchpad.data()[paddr & 0x00000FFF],
+                                        sizeof(T));
+                            return result;
+
                         // I/O Ports
                         case 1:
                             switch (paddr & 0x00000FFF)
@@ -114,6 +121,22 @@ namespace PlayStation
                     std::memcpy(&ram.data()[paddr], &data, sizeof(T));
                     return;
 
+                case 0x1F80:
+                    switch ((paddr & 0x0000F000) >> 12)
+                    {
+                        // Scratchpad
+                        case 0:
+                            std::memcpy(&scratchpad.data()[paddr & 0x00000FFF],
+                                        &data,
+                                        sizeof(T));
+                            return;
+
+                        default:
+                            printf("Unknown memory write: 0x%08X <- 0x%x\n", paddr,
+                                                                             data);
+                            return;
+                    }
+
                 default:
                     printf("Unknown memory write: 0x%08X <- 0x%x\n", paddr,
                                                                      data);
@@ -124,12 +147,19 @@ namespace PlayStation
         /// @brief [0x00000000 - 0x001FFFFF]: Main RAM
         std::vector<Byte> ram;
 
+        /// @brief [0x1F800000 - 0x1F8003FF]: Scratchpad
+        /// (D-Cache used as Fast RAM)
+        std::vector<Byte> scratchpad;
+
         /// @brief GPU device instance
         GPU gpu;
 
     private:
-        /// @brief Number of bytes that composes the main RAM area.
+        /// @brief Number of bytes that compose the main RAM area.
         const unsigned int RAM_SIZE{ 2097152 };
+
+        /// @brief Number of bytes that compose the scratchpad.
+        const unsigned int SCRATCHPAD_SIZE{ 1024 };
 
         /// @brief [0x1FC00000 - 0x1FC7FFFF]: BIOS ROM (512 KB)
         std::vector<Byte> bios;

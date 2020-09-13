@@ -34,7 +34,7 @@ auto Emulator::run() -> void
         if (cpu.pc == 0x80030000)
         {
             emit time_to_inject_exe();
-            tracing = true;
+            //tracing = true;
 
             // The thread will be restarted when the EXE is loaded.
             quit();
