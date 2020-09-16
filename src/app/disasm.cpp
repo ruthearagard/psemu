@@ -99,6 +99,18 @@ auto Disassembler::before() noexcept -> void
             index += 9;
         }
 
+        if (instruction.indexOf("$shift_gpr", index) > 0)
+        {
+            result += QString("%1, %2, %3")
+                      .arg(gpr[cpu.instruction.rd])
+                      .arg(gpr[cpu.instruction.rt])
+                      .arg(gpr[cpu.instruction.rs]);
+
+            post_regs.push_back(PostExecutionData{ cpu.gpr[cpu.instruction.rd],
+                                                   gpr[cpu.instruction.rd] });
+            index += 10;
+        }
+
         if (instruction.indexOf("$absolute_jump", index) > 0)
         {
             result += QString("%1").arg(gpr[cpu.instruction.rs]);

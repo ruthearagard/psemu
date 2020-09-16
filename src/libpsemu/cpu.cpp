@@ -80,10 +80,10 @@ auto CPU::trap(const Exception exc, const Word bad_vaddr) noexcept -> void
     // So on an exception, the CPU:
 
     // 1) sets up EPC to point to the restart location.
-    cop0[COP0Register::EPC] = pc;
+    cop0[COP0Register::EPC] = pc - 4;
 
     // 2) The pre-existing user-mode and interrupt-enable flags in SR are saved
-    //    by pushing the 3 - entry stack inside SR, and changing to kernel mode
+    //    by pushing the 3-entry stack inside SR, and changing to kernel mode
     //    with interrupts disabled.
     cop0[COP0Register::SR] = (cop0[COP0Register::SR] & 0xFFFFFFC0) |
                             ((cop0[COP0Register::SR] & 0x0000000F) << 2);
@@ -211,8 +211,8 @@ auto CPU::step() noexcept -> void
                 case SPECIALInstruction::MULT:
                 {
                     const uint64_t product =
-                    static_cast<SignedWord>(gpr[instruction.rs]) *
-                    static_cast<SignedWord>(gpr[instruction.rt]);
+                    static_cast<int64_t>(static_cast<SignedWord>(gpr[instruction.rs])) *
+                    static_cast<int64_t>(static_cast<SignedWord>(gpr[instruction.rt]));
 
                     lo = product & 0x00000000FFFFFFFF;
                     hi = product >> 32;
@@ -222,8 +222,8 @@ auto CPU::step() noexcept -> void
 
                 case SPECIALInstruction::MULTU:
                 {
-                    const uint64_t product = gpr[instruction.rs] *
-                                             gpr[instruction.rt];
+                    const uint64_t product = static_cast<uint64_t>(gpr[instruction.rs]) *
+                                             static_cast<uint64_t>(gpr[instruction.rt]);
 
                     lo = product & 0x00000000FFFFFFFF;
                     hi = product >> 32;
@@ -296,6 +296,23 @@ auto CPU::step() noexcept -> void
                 }
 
                 case SPECIALInstruction::ADD:
+                {
+                    const Word rs{ gpr[instruction.rs] };
+                    const Word rt{ gpr[instruction.rt] };
+
+                    const Word result = rs + rt;
+
+                    if (!((rs ^ rt) & 0x80000000) &&
+                        ((result ^ rs) & 0x80000000))
+                    {
+                        trap(Exception::Ovf);
+                        break;
+                    }
+
+                    gpr[instruction.rd] = result;
+                    break;
+                }
+
                 case SPECIALInstruction::ADDU:
                     gpr[instruction.rd] =
                     gpr[instruction.rs] +
@@ -304,6 +321,23 @@ auto CPU::step() noexcept -> void
                     break;
 
                 case SPECIALInstruction::SUB:
+                {
+                    const Word rs{ gpr[instruction.rs] };
+                    const Word rt{ gpr[instruction.rt] };
+
+                    const uint32_t result = rs - rt;
+
+                    if (((rs ^ rt) & 0x80000000) &&
+                       ((result ^ rs) & 0x80000000))
+                    {
+                        trap(Exception::Ovf);
+                        break;
+                    }
+
+                    gpr[instruction.rd] = result;
+                    break;
+                }
+
                 case SPECIALInstruction::SUBU:
                     gpr[instruction.rd] =
                     gpr[instruction.rs] -
@@ -379,7 +413,7 @@ auto CPU::step() noexcept -> void
             {
                 gpr[31] = next_pc;
             }
-            branch_if(static_cast<int32_t>((gpr[instruction.rs]) ^
+            branch_if(static_cast<int32_t>(gpr[instruction.rs] ^
                                            (instruction.rt << 31)) < 0);
             break;
 
@@ -406,10 +440,30 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::BGTZ:
-            branch_if(gpr[instruction.rs] > 0);
+            branch_if(static_cast<SignedWord>(gpr[instruction.rs]) > 0);
             break;
 
         case Instruction::ADDI:
+        {
+            const Word imm
+            {
+                static_cast<Word>(static_cast<SignedHalfword>(immediate()))
+            };
+
+            const Word rs{ gpr[instruction.rs] };
+
+            const uint32_t result = imm + rs;
+
+            if (!((rs ^ imm) & 0x80000000) && ((result ^ rs) & 0x80000000))
+            {
+                trap(Exception::Ovf);
+                break;
+            }
+
+            gpr[instruction.rt] = result;
+            break;
+        }
+
         case Instruction::ADDIU:
             gpr[instruction.rt] =
             gpr[instruction.rs] +
@@ -427,7 +481,7 @@ auto CPU::step() noexcept -> void
         case Instruction::SLTIU:
             gpr[instruction.rt] =
             gpr[instruction.rs] <
-            static_cast<Word>(static_cast<Halfword>(immediate()));
+            static_cast<Word>(static_cast<SignedHalfword>(immediate()));
 
             break;
 
@@ -481,8 +535,17 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::LH:
-            gpr[instruction.rt] = bus.memory_access<SignedHalfword>(vaddr());
+        {
+            const Word m_vaddr{ vaddr() };
+
+            if ((m_vaddr & 1) != 0)
+            {
+                trap(Exception::AdEL, m_vaddr);
+                break;
+            }
+            gpr[instruction.rt] = bus.memory_access<SignedHalfword>(m_vaddr);
             break;
+        }
 
         case Instruction::LWL:
         {
@@ -519,16 +582,34 @@ auto CPU::step() noexcept -> void
         }
 
         case Instruction::LW:
+        {
+            const Word m_vaddr{ vaddr() };
+
+            if ((m_vaddr & 0x00000003) != 0)
+            {
+                trap(Exception::AdEL, m_vaddr);
+                break;
+            }
             gpr[instruction.rt] = bus.memory_access<Word>(vaddr());
             break;
+        }
 
         case Instruction::LBU:
             gpr[instruction.rt] = bus.memory_access<Byte>(vaddr());
             break;
 
         case Instruction::LHU:
-            gpr[instruction.rt] = bus.memory_access<Halfword>(vaddr());
+        {
+            const Word m_vaddr{ vaddr() };
+
+            if ((m_vaddr & 1) != 0)
+            {
+                trap(Exception::AdEL, m_vaddr);
+                break;
+            }
+            gpr[instruction.rt] = bus.memory_access<Halfword>(m_vaddr);
             break;
+        }
 
         case Instruction::LWR:
         {
@@ -559,6 +640,7 @@ auto CPU::step() noexcept -> void
 
                     break;
             }
+            break;
         }
 
         case Instruction::SB:
@@ -567,9 +649,18 @@ auto CPU::step() noexcept -> void
             break;
 
         case Instruction::SH:
-            bus.memory_access<Halfword>(vaddr(),
+        {
+            const Word m_vaddr{ vaddr() };
+
+            if ((m_vaddr & 1) != 0)
+            {
+                trap(Exception::AdES, m_vaddr);
+                break;
+            }
+            bus.memory_access<Halfword>(m_vaddr,
                                         gpr[instruction.rt] & 0x0000FFFF);
             break;
+        }
 
         case Instruction::SWL:
         {
@@ -602,6 +693,13 @@ auto CPU::step() noexcept -> void
         case Instruction::SW:
             if (!(cop0[COP0Register::SR] & SRBits::IsC))
             {
+                const Word m_vaddr{ vaddr() };
+
+                if ((m_vaddr & 0x00000003) != 0)
+                {
+                    trap(Exception::AdES);
+                    break;
+                }
                 bus.memory_access<Word>(vaddr(), gpr[instruction.rt]);
             }
             break;
