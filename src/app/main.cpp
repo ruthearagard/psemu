@@ -22,6 +22,15 @@ int main(int argc, char* argv[])
     qt.setApplicationName("psemu");
     qt.setApplicationVersion("1.0");
 
+    // Required to ensure that we are able to acquire an OpenGL 3.2 Core
+    // profile.
+    QSurfaceFormat fmt;
+    fmt.setVersion(3, 2);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(fmt);
+
+    qRegisterMetaType<PlayStation::GPU::VRAMData>("PlayStation::GPU::VRAMData");
+
     PSEmu psemu;
     return qt.exec();
 }

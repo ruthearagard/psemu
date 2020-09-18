@@ -27,6 +27,8 @@ PSEmu::PSEmu() noexcept : emu_thread(new Emulator(this))
 
     load_bios_file(bios_file);
 
+    connect(emu_thread, &Emulator::render_frame, &opengl, &OpenGL::render_frame);
+
     connect(emu_thread, &Emulator::time_to_inject_exe, this, [=]()
     {
         QFile file(exe_file);
@@ -74,6 +76,10 @@ PSEmu::PSEmu() noexcept : emu_thread(new Emulator(this))
         // that the EXE has been injected.
         emu_thread->start();
     });
+
+    main_window.setCentralWidget(&opengl);
+    main_window.show();
+
     emu_thread->start();
 }
 

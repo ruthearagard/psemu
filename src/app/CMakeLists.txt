@@ -33,8 +33,8 @@ set(CMAKE_AUTORCC ON)
 # reliably, there is still a cost to perform the check on every rebuild."
 #
 # Source (heh): https://cmake.org/cmake/help/v3.13/command/file.html#filesystem
-set(SRCS disasm.cpp emulator.cpp psemu.cpp main.cpp)
-set(HDRS disasm.h emulator.h psemu.h)
+set(SRCS disasm.cpp emulator.cpp psemu.cpp main.cpp main_window.cpp opengl.cpp)
+set(HDRS disasm.h emulator.h psemu.h main_window.h opengl.h)
 
 add_executable(psemu_main ${SRCS} ${HDRS})
 

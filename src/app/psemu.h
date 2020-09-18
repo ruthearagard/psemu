@@ -16,6 +16,8 @@
 
 #include <QObject>
 #include "emulator.h"
+#include "main_window.h"
+#include "opengl.h"
 
 /// @brief PSEmu main controller.
 class PSEmu : public QObject
@@ -40,4 +42,10 @@ private:
 
     /// @brief Emulator instance
     Emulator* emu_thread;
+
+    /// @brief Main window instance
+    MainWindow main_window;
+
+    /// @brief OpenGL instance
+    OpenGL opengl;
 };

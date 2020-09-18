@@ -48,7 +48,7 @@ namespace PlayStation
             // Control register (0xFFFE0130), but for now it works.
             const Word paddr{ vaddr & 0x1FFFFFFF };
 
-            T result = 0;
+            T result{ 0 };
 
             switch ((paddr & 0xFFFF0000) >> 16)
             {
@@ -130,6 +130,24 @@ namespace PlayStation
                                         &data,
                                         sizeof(T));
                             return;
+
+                        // I/O Ports
+                        case 1:
+                            switch (paddr & 0x00000FFF)
+                            {
+                                case GPU::Registers::GP0:
+                                    gpu.gp0(data);
+                                    return;
+
+                                case GPU::Registers::GP1:
+                                    gpu.gp1(data);
+                                    return;
+
+                                default:
+                                    printf("Unknown memory write: 0x%08X <- 0x%x\n", paddr,
+                                                                                     data);
+                                    return;
+                            }
 
                         default:
                             printf("Unknown memory write: 0x%08X <- 0x%x\n", paddr,

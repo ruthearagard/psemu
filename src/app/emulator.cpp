@@ -29,48 +29,56 @@ auto Emulator::run() -> void
     trace_file.open(QIODevice::WriteOnly);
     QTextStream out(&trace_file);
 
+    static constexpr auto max_cycles{ 33868800 / 60 };
+    auto cycles{ 0 };
+
     for (;;)
     {
-        if (cpu.pc == 0x80030000)
+        while (cycles++ != max_cycles)
         {
-            emit time_to_inject_exe();
-            tracing = true;
-
-            // The thread will be restarted when the EXE is loaded.
-            quit();
-            break;
-        }
-
-        if (cpu.pc == 0x000000A0)
-        {
-            switch (cpu.gpr[9])
+            if (cpu.pc == 0x80030000)
             {
-                case 0x3C:
-                    QTextStream(stdout) << static_cast<char>(cpu.gpr[4]);
-                    break;
+                emit time_to_inject_exe();
+                //tracing = true;
+
+                // The thread will be restarted when the EXE is loaded.
+                quit();
+                break;
+            }
+
+            if (cpu.pc == 0x000000A0)
+            {
+                switch (cpu.gpr[9])
+                {
+                    case 0x3C:
+                        QTextStream(stdout) << static_cast<char>(cpu.gpr[4]);
+                        break;
+                }
+            }
+
+            if (cpu.pc == 0x000000B0)
+            {
+                switch (cpu.gpr[9])
+                {
+                    case 0x3D:
+                        QTextStream(stdout) << static_cast<char>(cpu.gpr[4]);
+                        break;
+                }
+            }
+
+            if (tracing)
+            {
+                disasm.before();
+            }
+            step();
+
+            if (tracing)
+            {
+                out << disasm.after() << "\n";
+                out.flush();
             }
         }
-
-        if (cpu.pc == 0x000000B0)
-        {
-            switch (cpu.gpr[9])
-            {
-                case 0x3D:
-                    QTextStream(stdout) << static_cast<char>(cpu.gpr[4]);
-                    break;
-            }
-        }
-
-        if (tracing)
-        {
-            disasm.before();
-        }
-        step();
-
-        if (tracing)
-        {
-            out << disasm.after() << "\n";
-            out.flush();
-        }
+        cycles = 0;
+        emit render_frame(bus.gpu.vram);
     }
 }

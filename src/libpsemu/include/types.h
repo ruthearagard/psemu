@@ -15,6 +15,8 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
+#include <type_traits>
 
 namespace PlayStation
 {
@@ -25,4 +27,56 @@ namespace PlayStation
     using SignedWord     = int32_t;
     using SignedHalfword = int16_t;
     using SignedByte     = int8_t;
+
+    constexpr auto operator""
+    _as_word(const unsigned long long int lvalue) noexcept -> Word
+    {
+        return lvalue;
+    }
+
+    constexpr auto operator""
+    _as_halfword(const unsigned long long int lvalue) noexcept -> Halfword
+    {
+        return lvalue;
+    }
+
+    constexpr auto operator""
+    _as_byte(const unsigned long long int lvalue) noexcept -> Byte
+    {
+        return lvalue;
+    }
+
+    constexpr auto operator""
+    _as_signed_word(const unsigned long long int lvalue) noexcept -> SignedWord
+    {
+        return lvalue;
+    }
+
+    constexpr auto operator""
+    _as_signed_halfword(const unsigned long long int lvalue) noexcept -> SignedHalfword
+    {
+        return lvalue;
+    }
+
+    constexpr auto operator""
+    _as_signed_byte(const unsigned long long int lvalue) noexcept -> SignedByte
+    {
+        return lvalue;
+    }
+
+    template<typename T>
+    constexpr auto sign_extend_word(const T t) noexcept
+    {
+        return Word(SignedWord(typename std::make_signed<T>::type(t)));
+    };
+
+    template<typename T>
+    constexpr auto sign_extend_halfword(const T t) noexcept
+    {
+        return Word(SignedHalfword(typename std::make_signed<T>::type(t)));
+    };
+
+    template<typename T>
+    constexpr auto zero_extend(T t) noexcept
+    { };
 }

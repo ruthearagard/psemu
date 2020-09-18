@@ -39,6 +39,9 @@ private:
     bool tracing{ false };
 
 signals:
+    /// @brief Emitted when it is time to render a frame.
+    void render_frame(const PlayStation::GPU::VRAMData& vram) noexcept;
+
     /// @brief Emitted when it is time to inject the EXE.
     void time_to_inject_exe() noexcept;
 };

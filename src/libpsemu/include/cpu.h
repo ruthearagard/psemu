@@ -212,6 +212,10 @@ private:
             SLTU    = 0x2B
         };
 
+        /// @brief Gets the current jump address.
+        /// @return The current jump address.
+        auto jump() noexcept -> void;
+
         /// @brief Traps an exception.
         /// @param exc The exception to trap.
         /// @param bad_vaddr The bad virtual address, if any.
