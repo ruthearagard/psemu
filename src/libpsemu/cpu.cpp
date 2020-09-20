@@ -306,7 +306,6 @@ auto CPU::step() noexcept -> void
                 case SPECIALInstruction::SLTU: rd = rs < rt; break;
 
                 default:
-                    __debugbreak();
                     break;
             }
             break;
@@ -438,7 +437,6 @@ auto CPU::step() noexcept -> void
                             break;
 
                         default:
-                            __debugbreak();
                             break;
                     }
                     break;
@@ -603,7 +601,6 @@ auto CPU::step() noexcept -> void
         }
 
         default:
-            __debugbreak();
             break;
     }
 

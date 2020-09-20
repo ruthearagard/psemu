@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cstdio>
+#include <cstring>
 #include <vector>
 #include "gpu.h"
 #include "types.h"
@@ -34,7 +35,7 @@ namespace PlayStation
         /// @brief Sets the BIOS data.
         /// @param data The data to use. Be advised that this function does not
         /// check whether or not the data is valid.
-        auto set_bios_data(const std::vector<Byte>& data) noexcept -> void;
+        auto set_bios_data(const BIOSData& data) noexcept -> void;
 
         /// @brief Returns data from memory.
         /// @tparam T The type of data to read.
@@ -167,19 +168,13 @@ namespace PlayStation
 
         /// @brief [0x1F800000 - 0x1F8003FF]: Scratchpad
         /// (D-Cache used as Fast RAM)
-        std::vector<Byte> scratchpad;
+        std::array<Byte, SCRATCHPAD_SIZE> scratchpad;
 
         /// @brief GPU device instance
         GPU gpu;
 
-    private:
-        /// @brief Number of bytes that compose the main RAM area.
-        const unsigned int RAM_SIZE{ 2097152 };
-
-        /// @brief Number of bytes that compose the scratchpad.
-        const unsigned int SCRATCHPAD_SIZE{ 1024 };
-
+private:
         /// @brief [0x1FC00000 - 0x1FC7FFFF]: BIOS ROM (512 KB)
-        std::vector<Byte> bios;
+        BIOSData bios;
     };
 }

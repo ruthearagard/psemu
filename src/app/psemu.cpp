@@ -100,12 +100,15 @@ auto PSEmu::load_bios_file(const QString& file_name) noexcept -> void
     }
 
     const auto file_data{ file.readAll() };
+    PlayStation::BIOSData bios;
 
-    std::vector<PlayStation::Byte> bios_data(file_data.begin(),
-                                             file_data.end());
+    for (auto index{ 0 }; index < PlayStation::BIOS_SIZE; ++index)
+    {
+        bios[index] = file_data[index];
+    }
     file.close();
 
-    emu_thread->set_bios_data(bios_data);
+    emu_thread->set_bios_data(bios);
 }
 
 /// @brief Spawn a QFileDialog and force the user to choose a file, or quit the

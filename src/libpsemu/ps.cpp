@@ -22,7 +22,7 @@ System::System() noexcept : cpu(bus)
 
 /// @brief Sets the BIOS data.
 /// @param data The data to use.
-auto System::set_bios_data(const std::vector<Byte>& data) noexcept -> void
+auto System::set_bios_data(const BIOSData& data) noexcept -> void
 {
     bus.set_bios_data(data);
     reset();

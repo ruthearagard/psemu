@@ -225,7 +225,6 @@ auto GPU::gp0(const Word packet) noexcept -> void
                     break;
 
                 default:
-                    __debugbreak();
                     break;
             }
             break;

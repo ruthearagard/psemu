@@ -79,4 +79,16 @@ namespace PlayStation
     template<typename T>
     constexpr auto zero_extend(T t) noexcept
     { };
+
+    /// @brief Number of bytes that compose the main RAM area.
+    constexpr auto RAM_SIZE{ 2097152 };
+
+    /// @brief Number of bytes that compose the scratchpad.
+    constexpr auto SCRATCHPAD_SIZE{ 1024 };
+
+    /// @brief Number of bytes that compose the BIOS data.
+    constexpr auto BIOS_SIZE{ 524288 };
+
+    /// @brief Type alias for the BIOS data.
+    using BIOSData = std::array<Byte, BIOS_SIZE>;
 }

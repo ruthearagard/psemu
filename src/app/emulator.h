@@ -40,8 +40,8 @@ private:
 
 signals:
     /// @brief Emitted when it is time to render a frame.
-    void render_frame(const PlayStation::GPU::VRAMData& vram) noexcept;
+    void render_frame(const PlayStation::GPU::VRAMData& vram);
 
     /// @brief Emitted when it is time to inject the EXE.
-    void time_to_inject_exe() noexcept;
+    void time_to_inject_exe();
 };

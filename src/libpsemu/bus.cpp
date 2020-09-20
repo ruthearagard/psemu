@@ -20,14 +20,13 @@ using namespace PlayStation;
 SystemBus::SystemBus() noexcept
 {
     ram.resize(RAM_SIZE);
-    scratchpad.resize(SCRATCHPAD_SIZE);
 }
 
 /// @brief Resets the system bus to the startup state.
 auto SystemBus::reset() noexcept -> void
 {
     ram.clear();
-    scratchpad.clear();
+    scratchpad.fill(0x00000000);
 
     gpu.reset();
 }
@@ -35,7 +34,7 @@ auto SystemBus::reset() noexcept -> void
 /// @brief Sets the BIOS data.
 /// @param data The data to use. Be advised that this function does not check
 /// whether or not the data is valid.
-auto SystemBus::set_bios_data(const std::vector<Byte>& data) noexcept -> void
+auto SystemBus::set_bios_data(const BIOSData& data) noexcept -> void
 {
     bios = data;
 }
