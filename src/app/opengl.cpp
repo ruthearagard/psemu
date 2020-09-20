@@ -17,7 +17,7 @@
 /// @brief Renders screen data to the OpenGL context.
 /// @param screen_data The RGBA32 screen data to render.
 auto OpenGL::render_frame
-(const PlayStation::GPU::VRAMData& screen_data) noexcept -> void
+(const PlayStation::VRAM& screen_data) noexcept -> void
 {
     glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -25,8 +25,8 @@ auto OpenGL::render_frame
                     0,
                     0,
                     0,
-                    PlayStation::GPU::VRAM_WIDTH,
-                    PlayStation::GPU::VRAM_HEIGHT,
+                    PlayStation::VRAM_WIDTH,
+                    PlayStation::VRAM_HEIGHT,
                     GL_RGBA,
                     GL_UNSIGNED_SHORT_1_5_5_5_REV,
                     screen_data.data());
@@ -133,8 +133,8 @@ auto OpenGL::initializeGL() -> void
     glTexImage2D(GL_TEXTURE_2D,
                  0,
                  GL_RGBA,
-                 PlayStation::GPU::VRAM_WIDTH,
-                 PlayStation::GPU::VRAM_HEIGHT,
+                 PlayStation::VRAM_WIDTH,
+                 PlayStation::VRAM_HEIGHT,
                  0,
                  GL_RGBA,
                  GL_UNSIGNED_SHORT_1_5_5_5_REV,

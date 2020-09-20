@@ -25,6 +25,7 @@ namespace PlayStation
     class GPU final
     {
     public:
+        /// @brief Resets the GPU to the startup state.
         auto reset() noexcept -> void;
 
         /// @brief Process a GP0 command packet for rendering and VRAM access.
@@ -35,50 +36,87 @@ namespace PlayStation
         /// @param packet The GP1 command packet to process.
         auto gp1(const Word packet) noexcept -> void;
 
+        /// @brief I/O register map
         enum Registers
         {
-            GP0     = 0x810,
-            GP1     = 0x814,
+            /// @brief 0x1F801810 - Send GP0 Commands/Packets
+            /// (Rendering and VRAM Access) (W)
+            GP0 = 0x810,
+
+            /// @brief 0x1F801814 - Send GP1 Commands (Display/DMA Control) (W)
+            GP1 = 0x814,
+
+            /// @brief 0x1F801814 - GPU Status Register (R)
             GPUSTAT = 0x814
         };
 
-        static constexpr auto VRAM_WIDTH{ 1024 };
-        static constexpr auto VRAM_HEIGHT{ 512 };
-
-        using VRAMData = std::array<Halfword, VRAM_WIDTH* VRAM_HEIGHT>;
-
         // A1B5G5R5
-        VRAMData vram;
+        VRAM vram;
 
+        /// @brief 0x1F801810 - Receive responses to GP0(0xC0) and GP1(0x10)
+        /// commands (R)
         Word gpuread;
 
     private:
-        enum GP0State
+        /// @brief GP0 port state.
+        ///
+        /// XXX: With proper GPUSTAT implementation, this may not be necessary.
+        enum class GP0State
         {
+            /// @brief The GP0 port is awaiting a command to process. This is
+            /// the normal operation.
             AwaitingCommand,
+
+            /// @brief The GP0 port has received a command and is processing
+            /// parameters to the command.
             ReceivingParameters,
+
+            /// @brief The GP0 port is receiving raw data for the command to
+            /// use.
             ReceivingData,
+
+            /// @brief The GP0 port is transferring data to GPUREAD.
             TransferringData
         };
 
+        /// @brief Current GP0 command data.
         struct
         {
+            /// @brief Parameters to the command.
             std::vector<Word> params;
+
+            /// @brief The function to call when all of the parameters to the
+            /// command have been received.
             std::function<void(const Word)> func;
+
+            /// @brief The number of parameters required by the command.
             unsigned int remaining_words;
         } cmd;
 
         struct Vertex
         {
-            // -1024..+1023
+            /// @brief -1024..+1023
             SignedHalfword x;
+
+            /// @brief -1024..+1023
             SignedHalfword y;
+
+            /// @brief 15-bit color
             Word color;
         };
 
+        /// @brief Resets the GP0 port to accept commands.
+        auto reset_gp0() noexcept -> void;
+
+        /// @brief Draws a rectangle.
+        /// @param v0 The first and only vertex data to use.
         auto draw_rect(const Vertex& v0) noexcept -> void;
 
+        /// @brief Converts rectangle command parameters to vertex data, and
+        /// draws a rectangle.
         auto draw_rect_helper() noexcept -> void;
+
+        /// @brief Current GP0 port state.
         GP0State gp0_state;
     };
 }

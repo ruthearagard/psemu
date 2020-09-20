@@ -35,7 +35,7 @@ namespace PlayStation
         /// @brief Sets the BIOS data.
         /// @param data The data to use. Be advised that this function does not
         /// check whether or not the data is valid.
-        auto set_bios_data(const BIOSData& data) noexcept -> void;
+        auto set_bios_data(const BIOS& data) noexcept -> void;
 
         /// @brief Returns data from memory.
         /// @tparam T The type of data to read.
@@ -175,6 +175,6 @@ namespace PlayStation
 
 private:
         /// @brief [0x1FC00000 - 0x1FC7FFFF]: BIOS ROM (512 KB)
-        BIOSData bios;
+        BIOS bios;
     };
 }

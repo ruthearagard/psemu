@@ -19,5 +19,5 @@
 MainWindow::MainWindow() noexcept
 {
     setWindowTitle("gbemu");
-    resize(PlayStation::GPU::VRAM_WIDTH, PlayStation::GPU::VRAM_HEIGHT);
+    resize(PlayStation::VRAM_WIDTH, PlayStation::VRAM_HEIGHT);
 }

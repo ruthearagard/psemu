@@ -26,7 +26,7 @@ class OpenGL : public QOpenGLWidget, protected QOpenGLFunctions_3_2_Core
 public:
     /// @brief Renders screen data to the OpenGL context.
     /// @param screen_data The RGBA32 screen data to render.
-    auto render_frame(const PlayStation::GPU::VRAMData& vram) noexcept -> void;
+    auto render_frame(const PlayStation::VRAM& vram) noexcept -> void;
 
 private:
     /// @brief Vertex buffer object

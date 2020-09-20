@@ -100,7 +100,7 @@ auto PSEmu::load_bios_file(const QString& file_name) noexcept -> void
     }
 
     const auto file_data{ file.readAll() };
-    PlayStation::BIOSData bios;
+    PlayStation::BIOS bios;
 
     for (auto index{ 0 }; index < PlayStation::BIOS_SIZE; ++index)
     {

@@ -89,6 +89,15 @@ namespace PlayStation
     /// @brief Number of bytes that compose the BIOS data.
     constexpr auto BIOS_SIZE{ 524288 };
 
+    /// @brief Width of the VRAM buffer.
+    constexpr auto VRAM_WIDTH{ 1024 };
+
+    /// @brief Height of the VRAM buffer.
+    constexpr auto VRAM_HEIGHT{ 512 };
+
+    /// @brief Type alias for the VRAM data.
+    using VRAM = std::array<Halfword, VRAM_WIDTH * VRAM_HEIGHT>;
+
     /// @brief Type alias for the BIOS data.
-    using BIOSData = std::array<Byte, BIOS_SIZE>;
+    using BIOS = std::array<Byte, BIOS_SIZE>;
 }

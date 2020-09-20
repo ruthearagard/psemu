@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     fmt.setProfile(QSurfaceFormat::CoreProfile);
     QSurfaceFormat::setDefaultFormat(fmt);
 
-    qRegisterMetaType<PlayStation::GPU::VRAMData>("PlayStation::GPU::VRAMData");
+    qRegisterMetaType<PlayStation::VRAM>("PlayStation::VRAM");
 
     PSEmu psemu;
     return qt.exec();

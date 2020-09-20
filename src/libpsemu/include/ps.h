@@ -29,7 +29,7 @@ namespace PlayStation
         /// @brief Sets the BIOS data.
         /// @param data The data to use. Be advised that this function does not
         /// check whether or not the data is valid.
-        auto set_bios_data(const BIOSData& data) noexcept -> void;
+        auto set_bios_data(const BIOS& data) noexcept -> void;
 
         /// @brief Resets the system to the startup state.
         auto reset() noexcept -> void;

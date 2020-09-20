@@ -16,14 +16,22 @@
 
 using namespace PlayStation;
 
+/// @brief Resets the GPU to the startup state.
 auto GPU::reset() noexcept -> void
 {
-    gp0_state = GP0State::AwaitingCommand;
-
-    cmd  = { };
-    //vram.fill(0);
+    reset_gp0();
+    vram.fill(0x0000);
 }
 
+/// @brief Resets the GP0 port to accept commands.
+auto GPU::reset_gp0() noexcept -> void
+{
+    gp0_state = GP0State::AwaitingCommand;
+    cmd = { };
+}
+
+/// @brief Draws a rectangle.
+/// @param v0 The first and only vertex data to use.
 auto GPU::draw_rect(const Vertex& v0) noexcept -> void
 {
     const unsigned int pixel_r = (v0.color & 0x000000FF) / 8;
@@ -34,6 +42,8 @@ auto GPU::draw_rect(const Vertex& v0) noexcept -> void
     (pixel_g << 5) | (pixel_b << 10) | pixel_r;
 }
 
+/// @brief Converts rectangle command parameters to vertex data, and draws a
+/// rectangle.
 auto GPU::draw_rect_helper() noexcept -> void
 {
     Vertex v0;
@@ -43,7 +53,7 @@ auto GPU::draw_rect_helper() noexcept -> void
     v0.x     = static_cast<SignedHalfword>(cmd.params[1] & 0x0000FFFF);
 
     draw_rect(v0);
-    reset();
+    reset_gp0();
 }
 
 /// @brief Process a GP0 command packet for rendering and VRAM access.
@@ -104,8 +114,8 @@ auto GPU::gp0(const Word packet) noexcept -> void
                                 // Lock the GP0 state to this function.
                                 gp0_state = GP0State::ReceivingData;
 
-                                // Again, we don't want to do anything until we receive at least one
-                                // data word.
+                                // We don't want to do anything until we
+                                // receive at least one data word.
                                 return;
                             }
 
@@ -137,7 +147,7 @@ auto GPU::gp0(const Word packet) noexcept -> void
                                 {
                                     // All of the expected data has been sent. Return to normal
                                     // operation.
-                                    reset();
+                                    reset_gp0();
                                 }
                                 return;
                             }
@@ -183,6 +193,9 @@ auto GPU::gp0(const Word packet) noexcept -> void
 
                                 // Lock the GP0 state to this function.
                                 gp0_state = GP0State::TransferringData;
+
+                                // We don't want to do anything until we
+                                // receive at least one data word.
                                 return;
                             }
 
@@ -214,9 +227,9 @@ auto GPU::gp0(const Word packet) noexcept -> void
 
                                 if (cmd.remaining_words == 0)
                                 {
-                                    // All of the expected data has been sent. Return to normal
-                                    // operation.
-                                    reset();
+                                    // All of the expected data has been sent.
+                                    // Return to normal operation.
+                                    reset_gp0();
                                 }
                                 return;
                             }
