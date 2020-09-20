@@ -439,6 +439,19 @@ private:
             EPC   = 14
         };
 
+        struct
+        {
+            Word* reg;
+            Word value;
+            unsigned int instrs;
+            bool pending;
+        } delay_slot;
+
+        /// @brief Handles a load delay slot.
+        /// @param reg The register to load the value into.
+        /// @param value The value to store.
+        auto load(Word* const reg, const Word value) noexcept -> void;
+
         /// @brief Gets the current jump address.
         /// @return The current jump address.
         auto jump() noexcept -> void;

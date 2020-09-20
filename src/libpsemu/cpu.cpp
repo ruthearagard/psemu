@@ -31,6 +31,8 @@ auto CPU::reset() noexcept -> void
     hi   = { };
     lo   = { };
 
+    delay_slot = { };
+
     pc      = RESET_VECTOR;
     next_pc = pc + 4;
 
@@ -70,6 +72,17 @@ auto CPU::base() const noexcept -> Word
 auto CPU::vaddr() const noexcept -> Word
 {
     return static_cast<SignedHalfword>(offset()) + gpr[base()];
+}
+
+/// @brief Handles a load delay slot.
+/// @param reg The register to load the value into.
+/// @param value The value to store.
+auto CPU::load(Word* const reg, const Word value) noexcept -> void
+{
+    delay_slot.reg     = reg;
+    delay_slot.value   = value;
+    delay_slot.pending = true;
+    delay_slot.instrs  = 1;
 }
 
 /// @brief Gets the current jump address.
@@ -123,6 +136,19 @@ auto CPU::branch_if(const bool condition_met) noexcept -> void
 /// @brief Executes the next instruction.
 auto CPU::step() noexcept -> void
 {
+    if (delay_slot.pending)
+    {
+        if (delay_slot.instrs == 0)
+        {
+            *delay_slot.reg = delay_slot.value;
+            delay_slot = { };
+        }
+        else
+        {
+            delay_slot.instrs--;
+        }
+    }
+
     if ((pc & 0x00000003) != 0)
     {
         trap(Exception::AdEL);
@@ -445,7 +471,7 @@ auto CPU::step() noexcept -> void
         break;
 
         case Instruction::LB:
-            gpr[instruction.rt] = bus.memory_access<SignedByte>(vaddr());
+            load(&gpr[instruction.rt], bus.memory_access<SignedByte>(vaddr()));
             break;
 
         case Instruction::LH:
