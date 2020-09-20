@@ -24,7 +24,7 @@ class Disassembler : public QObject
     Q_OBJECT
 
 public:
-    Disassembler(const PlayStation::CPU& c,
+    Disassembler(PlayStation::CPU& c,
                  PlayStation::SystemBus& b) noexcept;
 
     /// @brief Disassembles the current instruction before it is executed.
@@ -259,7 +259,7 @@ private:
     };
 
     /// @brief PlayStation CPU instance
-    const PlayStation::CPU& cpu;
+    PlayStation::CPU& cpu;
 
     /// @brief PlayStation system bus instance
     PlayStation::SystemBus& bus;

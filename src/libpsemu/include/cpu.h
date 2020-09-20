@@ -40,9 +40,6 @@ namespace PlayStation
         /// @brief General purpose registers.
         std::array<Word, 32> gpr;
 
-        /// @brief System control co-processor registers (COP0)
-        std::array<Word, 32> cop0;
-
         /// @brief Program counter.
         Word pc;
 
@@ -83,6 +80,242 @@ namespace PlayStation
             Word word;
         } instruction;
 
+        /// @brief System control co-processor registers (COP0)
+        struct
+        {
+            /// @brief The Bad Address (BadA) Register is a read-only register
+            /// that saves the address associated with an illegal access. This
+            /// register saves only addressing errors (AdEL or AdES), not bus
+            /// errors.
+            Word BadA;
+
+            /// @brief The Status Register contains all major status bits for
+            /// exception conditions. All bits in the Status Register, with the
+            /// exception of the TS (TLB Shutdown) bit, are readable and
+            /// writable; the TS bit is read-only.
+            union
+            {
+                struct
+                {
+                    /// @brief Current interrupt enable setting
+                    /// (0 means disabled, 1 means enabled).
+                    unsigned int IEc : 1;
+
+                    /// @brief Current Kernel-User mode setting
+                    /// (0 means kernel, 1 means user).
+                    unsigned int KUc : 1;
+
+                    /// @brief Previous interrupt enable setting
+                    /// (0 means disabled, 1 means enabled).
+                    unsigned int IEp : 1;
+
+                    /// @brief Previous Kernel-User mode setting
+                    /// (0 means kernel, 1 means user).
+                    unsigned int KUp : 1;
+
+                    /// @brief Old interrupt enable setting
+                    /// (0 means disabled, 1 means enabled).
+                    unsigned int IEo : 1;
+
+                    /// @brief Old Kernel-User mode setting
+                    /// (0 means kernel, 1 means user).
+                    unsigned int KUo : 1;
+
+                    /// @brief Reserved, read only and always read as 0.
+                    unsigned int : 2;
+
+                    /// @brief Software sets this bit to one to enable the SW0
+                    /// software interrupt.
+                    unsigned int SW0 : 1;
+
+                    /// @brief Software sets this bit to one to enable the SW1
+                    /// software interrupt.
+                    unsigned int SW1 : 1;
+
+                    /// @brief Software sets this bit to enable the INT0
+                    /// hardware interrupt.
+                    unsigned int INT0 : 1;
+
+                    /// @brief Software sets this bit to enable the INT1
+                    /// hardware interrupt.
+                    unsigned int INT1 : 1;
+
+                    /// @brief Software sets this bit to enable the INT2
+                    /// hardware interrupt.
+                    unsigned int INT2 : 1;
+
+                    /// @brief Software sets this bit to enable the INT3
+                    /// hardware interrupt.
+                    unsigned int INT3 : 1;
+
+                    /// @brief Software sets this bit to enable the INT4
+                    /// hardware interrupt.
+                    unsigned int INT4 : 1;
+
+                    /// @brief Software sets this bit to enable the INT5
+                    /// hardware interrupt.
+                    unsigned int INT5 : 1;
+
+                    /// @brief When this bit is set to one, store operations do
+                    /// not propagate through LR333x0 to the external memory
+                    /// system. This bit must be set to one for cache testing.
+                    unsigned int IsC : 1;
+
+                    /// @brief Reserved, read only and always read as 0.
+                    unsigned int : 1;
+
+                    /// @brief Software sets PZ to one to force the LR333x0 to
+                    /// generate zeros on DP[3:0] during store transactions.
+                    ///
+                    /// XXX: I have no idea what this means.
+                    unsigned int PZ : 1;
+
+                    /// @brief Reserved, read only and always read as 0.
+                    unsigned int : 1;
+
+                    /// @brief The LR333x0 sets the PE bit to one if it detects
+                    /// an external memory parity error. Software may use the
+                    /// PE bit to log external memory parity errors. The parity
+                    /// error condition is reset by writing a one into PE;
+                    /// writing a zero into this bit does not affect its value.
+                    unsigned int PE : 1;
+
+                    /// @brief In the LR333x0, this bit is permanently set to
+                    /// zero and is read only.
+                    unsigned int TS : 1;
+
+                    /// @brief The BEV bit controls the location of general
+                    /// exception vectors during bootstrap (immediately
+                    /// following reset). When this bit is set to zero, the
+                    /// normal exception vectors are used. When this bit is set
+                    /// to one, bootstrap vector locations are used.
+                    unsigned int BEV : 1;
+
+                    /// @brief Reserved, read only and always read as 0.
+                    unsigned int : 5;
+
+                    /// @brief Software sets this bit to one to indicate that
+                    /// the system control co-processor (COP0) is usable.
+                    unsigned int CU0 : 1;
+
+                    /// @brief Software sets this bit to one to indicate that
+                    /// the COP1 coprocessor is usable.
+                    unsigned int CU1 : 1;
+
+                    /// @brief Software sets this bit to one to indicate that
+                    /// the Geometry Transformation Engine (GTE, COP2) is
+                    /// usable.
+                    unsigned int CU2 : 1;
+
+                    /// @brief Software sets this bit to one to indicate that
+                    /// the COP3 coprocessor is usable.
+                    unsigned int CU3 : 1;
+                };
+                Word word;
+            } SR;
+
+            union
+            {
+                struct
+                {
+                    /// @brief Reserved, read only and always read as 0.
+                    unsigned int : 2;
+
+                    /// @brief The LR333x0 sets this field to indicate the type
+                    /// of event that caused the last general exception.
+                    unsigned int ExcCode : 4;
+
+                    /// @brief Reserved, read only and always read as 0.
+                    unsigned int : 2;
+
+                    /// @brief By setting this bit to one, software causes the
+                    /// LR333x0 to transfer control to the general exception
+                    /// routine. The exception routine must reset the SW0 bit
+                    /// before returning control to the interrupting software.
+                    unsigned int SW0 : 1;
+
+                    /// @brief By setting this bit to one, software causes the
+                    /// LR333x0 to transfer control to the general exception
+                    /// routine. The exception routine must reset the SW0 bit
+                    /// before returning control to the interrupting software.
+                    unsigned int SW1 : 1;
+
+                    /// @brief The LR333x0 sets this bit to one to indicate
+                    /// that an external interrupt is pending on INT0.
+                    unsigned int IP0 : 1;
+
+                    /// @brief The LR333x0 sets this bit to one to indicate
+                    /// that an external interrupt is pending on INT1.
+                    unsigned int IP1 : 1;
+
+                    /// @brief The LR333x0 sets this bit to one to indicate
+                    /// that an external interrupt is pending on INT2.
+                    unsigned int IP2 : 1;
+
+                    /// @brief The LR333x0 sets this bit to one to indicate
+                    /// that an external interrupt is pending on INT3.
+                    unsigned int IP3 : 1;
+
+                    /// @brief The LR333x0 sets this bit to one to indicate
+                    /// that an external interrupt is pending on INT4.
+                    unsigned int IP4 : 1;
+
+                    /// @brief The LR333x0 sets this bit to one to indicate
+                    /// that an external interrupt is pending on INT5.
+                    unsigned int IP5 : 1;
+
+                    /// @brief Reserved, read only and always read as 0.
+                    unsigned int : 11;
+
+                    /// @brief When taking a Coprocessor Unusable exception,
+                    /// the LR333x0 writes the referenced coprocessor number in
+                    /// this field. This field is otherwise undefined.
+                    unsigned int CE : 2;
+
+                    /// @brief When the BD bit is set, the BT bit determines
+                    /// whether or not the branch is taken. A value of one in
+                    /// BT indicates that the branch is taken. The Target
+                    /// Address Register holds the return address.
+                    unsigned int BT : 1;
+
+                    /// @brief The LR333x0 sets this bit to one to indicate
+                    /// that the last exception was taken while executing in a
+                    /// branch delay slot.
+                    unsigned int BD : 1;
+                };
+                Word word;
+            } Cause;
+
+            /// @brief The 32-bit Exception Program Counter (EPC) Register
+            /// contains the address where processing resumes after an
+            /// exception is serviced. In most cases, the EPC Register contains
+            /// the address of the instruction that caused the exception.
+            /// However, when the exception instruction resides in a branch
+            /// delay slot, the Cause Register's BD bit is set to one to
+            /// indicate that the EPC Register contains the address of the
+            /// immediately preceding branch or jump instruction.
+            Word EPC;
+
+            /// @brief Unused value which is returned when the subscript
+            /// operator encounters an unknown index.
+            Word unused;
+
+            /// @brief We overload the subscript operator to allow for indexed
+            /// based access to the registers. This method is more intuitive vs
+            /// a separate function call for it.
+            auto operator[](const int index) noexcept -> Word&
+            {
+                switch (index)
+                {
+                    case COP0Register::BadA:  return BadA;
+                    case COP0Register::SR:    return SR.word;
+                    case COP0Register::Cause: return Cause.word;
+                    case COP0Register::EPC:   return EPC;
+                    default:                  return unused;
+                }
+            }
+        } cop0;
+
         /// @brief Returns the 26-bit target address.
         auto target() const noexcept -> Word;
 
@@ -112,21 +345,6 @@ namespace PlayStation
         enum COP0Instruction
         {
             RFE = 0x10
-        };
-
-        /// @brief System control co-processor (COP0) registers
-        enum COP0Register
-        {
-            BadA  = 8,
-            SR    = 12,
-            Cause = 13,
-            EPC   = 14
-        };
-
-        /// @brief Status register (SR) bits
-        enum SRBits
-        {
-            IsC = 1 << 16
         };
 
         /// @brief Exception codes
@@ -210,6 +428,15 @@ private:
             NOR     = 0x27,
             SLT     = 0x2A,
             SLTU    = 0x2B
+        };
+
+        /// @brief System control co-processor (COP0) registers
+        enum COP0Register
+        {
+            BadA  = 8,
+            SR    = 12,
+            Cause = 13,
+            EPC   = 14
         };
 
         /// @brief Gets the current jump address.

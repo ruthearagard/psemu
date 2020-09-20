@@ -87,23 +87,22 @@ auto CPU::trap(const Exception exc, const Word bad_vaddr) noexcept -> void
     // So on an exception, the CPU:
 
     // 1) sets up EPC to point to the restart location.
-    cop0[COP0Register::EPC] = pc - 4;
+    cop0.EPC = pc - 4;
 
     // 2) The pre-existing user-mode and interrupt-enable flags in SR are saved
     //    by pushing the 3-entry stack inside SR, and changing to kernel mode
     //    with interrupts disabled.
-    cop0[COP0Register::SR] = (cop0[COP0Register::SR] & 0xFFFFFFC0) |
-                            ((cop0[COP0Register::SR] & 0x0000000F) << 2);
+    cop0.SR.word = (cop0.SR.word & 0xFFFFFFC0) |
+                  ((cop0.SR.word & 0x0000000F) << 2);
 
     // 3a) Cause is setup so that software can see the reason for the
     //     exception.
-    cop0[COP0Register::Cause] = (cop0[COP0Register::Cause] & ~0xFFFF00FF) |
-                                (exc << 2);
+    cop0.Cause.word = (cop0.Cause.word & ~0xFFFF00FF) | (exc << 2);
 
     // 3b) On address exceptions BadVaddr is also set.
     if (exc == Exception::AdEL)
     {
-        cop0[COP0Register::BadA] = bad_vaddr;
+        cop0.BadA = bad_vaddr;
     }
 
     // 4) Transfers control to the exception entry point.
@@ -430,9 +429,9 @@ auto CPU::step() noexcept -> void
                     switch (instruction.funct)
                     {
                         case COP0Instruction::RFE:
-                            cop0[COP0Register::SR] =
-                           (cop0[COP0Register::SR] & 0xFFFFFFF0) |
-                          ((cop0[COP0Register::SR] & 0x0000003C) >> 2);
+                            cop0.SR.word =
+                           (cop0.SR.word & 0xFFFFFFF0) |
+                          ((cop0.SR.word & 0x0000003C) >> 2);
 
                             break;
 
@@ -566,7 +565,7 @@ auto CPU::step() noexcept -> void
         }
 
         case Instruction::SW:
-            if (!(cop0[COP0Register::SR] & SRBits::IsC))
+            if (!cop0.SR.IsC)
             {
                 const Word m_vaddr{ vaddr() };
 

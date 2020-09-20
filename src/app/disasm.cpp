@@ -15,7 +15,7 @@
 #include <cstdlib>
 #include "disasm.h"
 
-Disassembler::Disassembler(const PlayStation::CPU& c,
+Disassembler::Disassembler(PlayStation::CPU& c,
                            PlayStation::SystemBus& b) noexcept : cpu(c), bus(b)
 { }
 
